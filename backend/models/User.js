@@ -36,8 +36,42 @@ const userSchema = new mongoose.Schema({
     street: String,
     city: String,
     state: String,
-    zipCode: String
+    zipCode: String,
+    locality: {
+      type: String,
+      required: function() { 
+        return this.role !== 'citizen'; // Required for staff/admin only
+      }
+    },
+    ward: String,
+    coordinates: {
+      lat: Number,
+      lng: Number
+    }
   },
+  
+  // === ADMIN/STAFF APPROVAL SYSTEM ===
+  isApproved: {
+    type: Boolean,
+    default: function() { 
+      return this.role === 'citizen'; // Citizens auto-approved
+    }
+  },
+  approvedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
+  approvedAt: Date,
+  
+  // === STAFF SPECIALIZATION ===
+  department: {
+    type: String,
+    enum: ['Roads', 'Water', 'Garbage', 'Electricity', 'General'],
+    required: function() { 
+      return this.role === 'staff'; // Required for staff only
+    }
+  },
+  
   isActive: {
     type: Boolean,
     default: true
@@ -53,8 +87,14 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     next();
   }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Match user entered password to hashed password in database

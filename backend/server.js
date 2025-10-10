@@ -2,6 +2,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+// Start automated services
+const CronService = require('./services/cronService');
+CronService.startSLAEnforcementCron();
 
 // Load env vars
 dotenv.config();
